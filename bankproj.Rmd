@@ -1,0 +1,613 @@
+---
+title: '**BANK MARKETING DATA**'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## **Report on the mining tasks**   
+
+This report is the fruit of endless hours of research in the technics used by the users of R to prepare data, 
+indeed it might most certainly not perfect nor as close to accuracy as it should be, however, the advanced coding technics used here are of value, especially the emphasis on the ggplot and the tidyverse data package, as it is a mandatory toolkit for any data scientist.
+At the end, looking forward to hear from you any feedback with which i can improve my work.
+
+### **univariate data exploration**  
+
+
+```{r }
+#upload the bank data set
+bank <- read.csv2("~/STUDIES/TBS Courses/DM course/raw data/bank.csv")
+#view the head of data frame of the set loaded
+head(bank)
+#structure of the data set
+str(bank)
+#create a data frame of numerical variables
+banknum <- bank[,c("age","balance","day","duration","campaign","pdays","previous")]
+#create a data frame of multinomial variables
+bankcat <- bank[,c("job","marital","education","contact","month","poutcome")]
+#create a data frame of binary variables
+bankbin <- bank[,c("default","housing","loan","y")]
+```
+
+
+We will study each set of categories one by one, we will start by the banknum set
+We will use the pearson correlation to determine the relation between them, for descriptive statistics we use the function describe from the psych package as it gives us better insights on the normality of the variables and the anaomalies.
+
+
+```{r}
+#Upload the necessary packages
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(Hmisc))
+suppressPackageStartupMessages(library(psych))
+suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(purrr))
+```
+
+
+## Numerical variables exploration
+we will also use the function multi.hist to perform a multiple histogram output with density plots. We will also conduct individual normality test, using the shapiro.test function.
+
+
+```{r }
+attach(banknum)
+psych::describe(banknum)
+rcorr(as.matrix(banknum))
+#we chose to not visualize the correlations because there's no significant ones
+#prepfereably to visualize with ggplot; rectification required
+multi.hist(banknum, bcol="orange",
+                    dcol="blue")
+shapiro.test(age)
+shapiro.test(balance)
+shapiro.test(day)
+shapiro.test(duration)
+shapiro.test(campaign)
+shapiro.test(pdays)
+shapiro.test(previous)
+```
+
+
+## Categorical variables exploration
+now we proceed to analyze the categorical variables in our data set.
+we will visualise with barplots and then we will conduct assosiation tests.
+
+
+```{r }
+summary(bankcat)
+p1 <-ggplot(data = bankcat, aes(x = job)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+p2 <-ggplot(data = bankcat, aes(x = marital)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p3 <-ggplot(data = bankcat, aes(x = education)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+p4 <-ggplot(data = bankcat, aes(x = contact)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p5 <-ggplot(data = bankcat, aes(x = month)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p6 <-ggplot(data = bankcat, aes(x = poutcome)) +
+     geom_bar(fill="orange", color="black") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p1;p2;p3;p4;p5;p6
+grid.arrange(p1,p2,p3,p4,p5,p6,
+             top="Plot matrix of the categorical variables in the bank data set")
+```
+
+
+## Binary variables explorations
+Now with the categorical and numerical variables have been visualized, it's time to proceed to the binary data.
+In this section we will have simple barplot of the categories in each binary variable.
+
+
+```{r }
+#summary of the binary data
+summary(bankbin)
+p11 <-ggplot(data = bankbin, aes(x=default)) + 
+            geom_bar(fill="orange", color="black") 
+p12 <-ggplot(data = bankbin, aes(x=housing)) + 
+            geom_bar(fill="orange", color="black")
+p13 <-ggplot(data = bankbin, aes(x=loan)) + 
+            geom_bar(fill="orange", color="black")
+p14 <-ggplot(data = bankbin, aes(x=y)) + 
+            geom_bar(fill="orange", color="black")
+grid.arrange(p11,p12,p13,p14,
+             top = "Plot matrix of binary data of the bank dataset")
+```
+
+
+## **Bivariate Exploration**
+In this section we will try to explore the associations between each variable type, and than the between variable's types
+### Categorical 
+In this subsection we will construct the contingency tables of possible combinations of the categorical variables, and then we will use these tables to conduct the chi2 test.
+
+
+```{r }
+attach(bankcat)
+t1 <-table(job, marital)
+t2 <-table(job, education)
+t3 <-table(job, contact)
+t4 <-table(job, month)
+t5 <-table(job, poutcome)
+t6 <-table(marital, education)
+t7 <-table(marital, contact)
+t8 <-table(marital, month)
+t9 <-table(marital, poutcome)
+t10 <-table(education,contact)
+t11 <-table(education,month)
+t12 <-table(education,poutcome)
+t13 <-table(contact,month)
+t14 <-table(contact,poutcome)
+t15 <-table(month,poutcome)
+tables <- list(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15)
+map(tables, chisq.test)
+```
+
+
+### Binary
+In this subsection we will explore the inter-binary association within the binary data.
+As usual, we construct the contingency tables, and then we conduct the chi2 test.
+
+
+```{r }
+attach(bankbin)
+t21 <-table(default, housing)
+t22 <-table(default, loan)
+t23 <-table(default, y)
+t24 <-table(housing, loan)
+t25 <-table(housing, y)
+t26 <-table(loan, y)
+tables1 <- list(t21, t22, t23, t24, t25, t26)
+map(tables1, chisq.test)
+```
+
+
+### Binarys vs numerical data
+In this subsection we will explore the association between "y", and the rest of the binary variables, this is mainly by conduction boxplots visualization using the ggplot2 package.
+
+
+```{r }
+attach(bank)
+a1 <-ggplot(data = bank, aes(x= y, y= age))+ 
+     geom_boxplot(fill= "orange", color="black") + 
+     coord_flip()
+a2 <-ggplot(data = bank, aes(x= y, y= balance))+ 
+     geom_boxplot(fill= "orange", color="black") + 
+     coord_flip()
+a3 <-ggplot(data = bank, aes(x= y, y= day))+ 
+     geom_boxplot(fill= "orange", color="black") + 
+     coord_flip()
+a4 <-ggplot(data = bank, aes(x= y, y= duration))+ 
+     geom_boxplot(fill= "orange", color="black")+ 
+     coord_flip()
+a5 <-ggplot(data = bank, aes(x= y, y= campaign))+ 
+     geom_boxplot(fill= "orange", color="black") + 
+     coord_flip()
+a6 <-ggplot(data = bank, aes(x= y, y= pdays)) + 
+     geom_boxplot(fill= "orange", color="black") + 
+     coord_flip()
+a1 
+a2
+a3
+a4
+a5
+a6
+grid.arrange(a1,a2,a3,a4,a5,a6,
+             top="Binary variables difference of groups regarding to 'y'")
+```
+
+
+**"Housing" vs the rest og the numerical variables**
+
+
+```{r }
+attach(bank)
+a11 <-ggplot(data = bank, aes(x= housing, y= age)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a21 <-ggplot(data = bank, aes(x= housing, y= balance)) + 
+      geom_boxplot(fill= "orange", color= "black") + 
+      coord_flip()
+a31 <-ggplot(data = bank, aes(x= housing, y= day)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a41 <-ggplot(data = bank, aes(x= housing, y= duration)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a51 <-ggplot(data = bank, aes(x= housing, y= campaign)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a61 <-ggplot(data = bank, aes(x= housing, y= pdays)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a11
+a21
+a31
+a41
+a51
+a61
+grid.arrange(a11,a21,a31,a41,a51,a61,
+             top= "Numerical data and their propreties comparing to housing")
+```
+
+
+**"Loan" vs the rest of the numerical variables**
+
+
+```{r }
+attach(bank)
+a12 <-ggplot(data = bank, aes(x= loan, y= age)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a22 <-ggplot(data = bank, aes(x= loan, y= balance)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a32 <-ggplot(data = bank, aes(x= loan, y= day)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a42 <-ggplot(data = bank, aes(x= loan, y= duration)) + 
+  geom_boxplot(fill= "orange", color="black") + 
+  coord_flip()
+a52 <-ggplot(data = bank, aes(x= loan, y= campaign)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a62 <-ggplot(data = bank, aes(x= loan, y= pdays)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a12
+a22
+a32
+a42
+a52
+a62
+grid.arrange(a12,a22,a32,a42,a52,a62,
+             top="numerical variables and their propreties comparing to 'loan'")
+```
+
+
+**"default" vs the rest of the categorical variables**
+
+
+```{r }
+attach(bank)
+a13 <-ggplot(data = bank, aes(x= default, y= age)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a23 <-ggplot(data = bank, aes(x= default, y= balance)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a33 <-ggplot(data = bank, aes(x= default, y= day)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a43 <-ggplot(data = bank, aes(x= default, y= duration)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a53 <-ggplot(data = bank, aes(x= default, y= campaign)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a63 <-ggplot(data = bank, aes(x= default, y= pdays)) + 
+      geom_boxplot(fill= "orange", color="black") + 
+      coord_flip()
+a13
+a23
+a33
+a43
+a53
+a63
+grid.arrange(a13,a23,a33,a43,a53,a63,
+             top ="the variable default in comparision to numerical variables")
+```
+
+
+### Numerical variables and the responses in "y"
+In this subsection we will explore the numerical variables pair-wise while discriminating them according to the response in the variable "y"
+
+
+**"age" vs the rest of the numerical variables**
+
+
+```{r }
+attach(bank)
+b11 <-ggplot(data = bank, aes( y= age))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b21 <-ggplot(data = bank, aes( y= age))+
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b31 <-ggplot(data = bank, aes( y= age))+ 
+      geom_boxplot(aes(fill = y)) +
+      facet_grid(education~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b41 <-ggplot(data = bank, aes( y= age))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b51 <-ggplot(data = bank, aes( y= age))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b61 <-ggplot(data = bank, aes( y= age))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b11
+b21
+b31
+b41
+b51
+b61
+```
+
+
+**"balance" vs the rest of the numerical variables** 
+ 
+ 
+```{r }
+b12 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b22 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b32 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(education~.) +
+      coord_flip() +
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b42 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) + 
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b52 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b62 <-ggplot(data = bank, aes( y= balance)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b12
+b22
+b32
+b42
+b52
+b62
+```
+
+
+**"day" vs the rest of the numerical variables**
+ 
+ 
+```{r }
+b13 <-ggplot(data = bank, aes( y= day)) +
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b23 <-ggplot(data = bank, aes( y=day)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b33 <-ggplot(data = bank, aes( y= day))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(education~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b43 <-ggplot(data = bank, aes( y= day)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b53 <-ggplot(data = bank, aes( y= day)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b63 <-ggplot(data = bank, aes( y= day)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1)) 
+b13
+b23
+b33
+b43
+b53
+b63
+```
+
+
+**"duration" vs the rest of the numerical variables**
+
+
+```{r }
+b14 <-ggplot(data = bank, aes( y= duration)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b24 <-ggplot(data = bank, aes( y= duration))+ 
+      geom_boxplot(aes(fill = y)) + facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b34 <-ggplot(data = bank, aes( y= duration)) +  
+      geom_boxplot(aes(fill = y)) +  
+      facet_grid(education~.) +
+      coord_flip()+
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b44 <-ggplot(data = bank, aes( y= duration)) + 
+      geom_boxplot(aes(fill = y)) +  
+      facet_grid(contact~.) + 
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b54 <-ggplot(data = bank, aes( y= duration)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b64 <-ggplot(data = bank, aes( y= duration)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() +
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b14
+b24
+b34
+b44
+b54
+b64
+```
+
+
+**"campaign" vs the rest of the numerical variables**
+
+
+```{r }
+b15 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b25 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b35 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(education~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b45 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) + 
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b55 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b65 <-ggplot(data = bank, aes( y= campaign)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) + 
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b15
+b25
+b35
+b45
+b55
+b65
+```
+ 
+ 
+**"pdays" vs the rest of the numerical variables**
+
+
+```{r }
+b16 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b26 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b36 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(education~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b46 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b56 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) +
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b66 <-ggplot(data = bank, aes( y= pdays)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b16
+b26
+b36
+b46
+b56
+b66
+```
+
+
+**"previous" vs the rest of the numerical variables**
+
+
+```{r}
+b17 <-ggplot(data = bank, aes( y= previous)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(job~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b27 <-ggplot(data = bank, aes( y= previous))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(marital~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b37 <-ggplot(data = bank, aes( y= previous))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(education~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b47 <-ggplot(data = bank, aes( y= previous))+ 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(contact~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b57 <-ggplot(data = bank, aes( y= previous)) + 
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(month~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b67 <-ggplot(data = bank, aes( y= previous)) +
+      geom_boxplot(aes(fill = y)) + 
+      facet_grid(poutcome~.) +
+      coord_flip() + 
+      theme(strip.text.y = element_text(angle = 360, hjust = 1))
+b17
+b27
+b37
+b47
+b57
+b67
+```
+
